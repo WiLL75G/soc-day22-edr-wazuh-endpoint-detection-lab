@@ -8,13 +8,13 @@
 - **Severity:** High Unauthorized User Creation + SSH Brute Force Detected
 - **Detection Method:** Wazuh EDR Agent Monitoring + Real-Time Alert Log Analysis
 - **Tools Used:** Wazuh Manager, Wazuh Agent, Ubuntu Server, Kali Linux
-- **Status:** Complete — All Threats Detected and Documented
+- **Status:** Complete All Threats Detected and Documented
 
 ---
 
 ## Executive Summary
 
-A Wazuh EDR lab was deployed across a two-machine environment Wazuh manager on Ubuntu Server and a Wazuh agent on Kali Linux (Attacker-Tier4). Real suspicious activity was generated on the Kali endpoint and monitored in real time through the Wazuh alerts log on the Ubuntu manager. Three categories of malicious activity were detected privilege escalation via sudo, unauthorized user account creation, and SSH brute force attempts using a non existent user. All alerts were captured, documented, and mapped to MITRE ATT&CK techniques.
+A Wazuh EDR lab was deployed across a two machine environment Wazuh manager on Ubuntu Server and a Wazuh agent on Kali Linux (Attacker-Tier4). Real suspicious activity was generated on the Kali endpoint and monitored in real time through the Wazuh alerts log on the Ubuntu manager. Three categories of malicious activity were detected privilege escalation via sudo, unauthorized user account creation, and SSH brute force attempts using a non existent user. All alerts were captured, documented, and mapped to MITRE ATT&CK techniques.
 
 ---
 
