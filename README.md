@@ -115,7 +115,7 @@ A Wazuh EDR lab was deployed across a two machine environment Wazuh manager on U
 
 ---
 
-### 6. Critical Alert — Unauthorized User Account Created
+### 6. Critical Alert Unauthorized User Account Created
 
 ![User Creation Alert](./screenshots/06_user_creation_alert.png)
 
