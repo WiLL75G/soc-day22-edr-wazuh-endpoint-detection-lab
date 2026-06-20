@@ -1,4 +1,4 @@
-# Day 21 – SOC Tier 1 Incident Report: EDR Wazuh Endpoint Detection Lab
+# SOC Tier 1 Incident Report: EDR Wazuh Endpoint Detection Lab
 
 ---
 
