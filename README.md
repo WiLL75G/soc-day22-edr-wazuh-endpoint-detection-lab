@@ -162,7 +162,7 @@ A Wazuh EDR lab was deployed across a two machine environment Wazuh manager on U
 | 5501 | 3 | PAM: Login session opened | Attacker-Tier4 | Low |
 | 5502 | 3 | PAM: Login session closed | Attacker-Tier4 | Low |
 | 5901 | 8 | New group added to the system | Attacker-Tier4 | High |
-| 5902 | 8 | New user added to the system — hacker123 | Attacker-Tier4 | High |
+| 5902 | 8 | New user added to the system "hacker123" | Attacker-Tier4 | High |
 | 5503 | 5 | PAM: User login failed | Attacker-Tier4 | Medium |
 | 5710 | 5 | sshd: Attempt to login using a non-existent user | Attacker-Tier4 | Medium |
 
