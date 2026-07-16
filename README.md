@@ -1,236 +1,173 @@
-# SOC Tier 1 Incident Report: EDR Wazuh Endpoint Detection Lab
+# Wazuh EDR Endpoint Detection Lab
 
----
+Deploying Wazuh across a manager and an agent, then generating real attack behaviour on the endpoint and watching the rules fire in the raw alert log. No dashboard.
 
-## Incident Summary
+## At a Glance
 
-- **Incident Type:** Endpoint Detection & Response Suspicious Activity Simulation
-- **Severity:** High Unauthorized User Creation + SSH Brute Force Detected
-- **Detection Method:** Wazuh EDR Agent Monitoring + Real-Time Alert Log Analysis
-- **Tools Used:** Wazuh Manager, Wazuh Agent, Ubuntu Server, Kali Linux
-- **Status:** Complete All Threats Detected and Documented
+| Field | Detail |
+| --- | --- |
+| Build Type | EDR deployment and endpoint detection |
+| Manager | Wazuh 4.x on Ubuntu Server, 192.168.64.12 |
+| Endpoint | Kali Linux, agent ID 004 |
+| Alert Source | /var/ossec/logs/alerts/alerts.log |
+| Detected | Privilege escalation, unauthorised account creation, SSH brute force |
+| Outcome | All three detected in real time, mapped to ATT&CK |
 
----
+## What Happened
 
-## Executive Summary
+A Wazuh manager was stood up on Ubuntu with an agent on a Kali endpoint. Three categories of suspicious behaviour were then generated on that endpoint and watched arriving at the manager live.
 
-A Wazuh EDR lab was deployed across a two machine environment Wazuh manager on Ubuntu Server and a Wazuh agent on Kali Linux (Attacker-Tier4). Real suspicious activity was generated on the Kali endpoint and monitored in real time through the Wazuh alerts log on the Ubuntu manager. Three categories of malicious activity were detected privilege escalation via sudo, unauthorized user account creation, and SSH brute force attempts using a non existent user. All alerts were captured, documented, and mapped to MITRE ATT&CK techniques.
+Everything was read from the raw alert log rather than a dashboard. That was deliberate. A dashboard tells you a rule fired. The log tells you what the rule actually saw, and the day the dashboard is down or the rule is wrong, the log is the only thing left.
 
----
+Scope stated plainly: the attack activity is self generated on a lab host, and the SSH brute force runs over loopback. The rules, the rule IDs, and the alerts are real Wazuh output.
 
-## Affected System
-
-- **Wazuh Manager:** Ubuntu Server 192.168.64.12
-- **Monitored Endpoint:** Kali Linux Attacker-Tier4 (ID: 004)
-- **Agent Status:** Active Connected
-- **Alert Log:** /var/ossec/logs/alerts/alerts.log
-- **Wazuh Version:** 4.x
-
----
-
-## Investigation Methodology
-
----
-
-### 1. Wazuh Manager Running Service Verified
+## Manager Verification
 
 ![Wazuh Manager Running](./screenshots/01_wazuh_manager_running.png)
 
-- Confirmed wazuh manager service active and running on Ubuntu Server
-- Service enabled on system startup
-- Manager memory usage confirmed at 1.1G healthy state
+Service confirmed active and enabled at startup, memory usage consistent with active processing.
 
-#### SOC Observations:
+Check the manager before trusting anything downstream. A stopped manager does not produce an error, it produces silence, and silence looks exactly like a quiet network.
 
-- Always verify EDR manager service status before beginning an investigation
-- A stopped manager means no alerts are being collected a critical blind spot
-- Memory usage indicates active processing of agent telemetry
-
----
-
-### 2. Wazuh Agent Deployed on Kali Linux
+## Agent Deployment
 
 ![Wazuh Agent Running](./screenshots/02_wazuh_agent_running.png)
 
-- Wazuh agent installed on Kali Linux (Attacker-Tier4)
-- Agent configured to connect to manager at 192.168.64.12
-- Agent status confirmed as active and running
-- Agent registered as ID 004 on the Wazuh manager
+Agent installed on the Kali endpoint, pointed at the manager, confirmed active, registered as ID 004.
 
-#### SOC Observations:
+The agent is the visibility. A host without one is not a low risk host, it is an unknown one.
 
-- EDR agents are the eyes on every endpoint without them the manager is blind
-- Agent registration ties the endpoint identity to the manager for attribution
-- In a real SOC every endpoint must have an active EDR agent unmonitored hosts are a risk
-
----
-
-### 3. Agent Connected and Active on Manager
+## Agent Connectivity
 
 ![Agent Connected](./screenshots/03_agent_connected.png)
 
-- Confirmed agent ID 004 Attacker-Tier4 showing as Active on manager
-- All previous disconnected agents removed for clean environment
-- Manager now monitoring one active endpoint
+Agent 004 confirmed Active on the manager. Stale disconnected agents removed so the inventory reflects reality.
 
-#### SOC Observations:
+An agent list full of disconnected entries is worse than an empty one. It means nobody knows which endpoints are actually covered, and coverage you cannot state is coverage you do not have.
 
-- Regular audit of connected agents is a SOC best practice
-- Disconnected agents represent unmonitored endpoints high risk
-- Stale agents should be removed to keep the environment clean and accurate
-
----
-
-### 4. Live Alert Log Real-Time Monitoring Active
+## Baseline
 
 ![Alerts Log Live](./screenshots/04_alerts_log_live.png)
 
-- Opened /var/ossec/logs/alerts/alerts.log on Ubuntu Server
-- Confirmed real-time alert stream active
-- Initial alerts captured from wazuh-manager itself
-- Baseline established before suspicious activity generation
+Alert log opened and confirmed streaming. Initial alerts from the manager itself captured. Baseline taken before any attack activity.
 
-#### SOC Observations:
+Baseline first. Without knowing what the log looks like quiet, there is no way to say what the attack added.
 
-- The alerts log is the primary investigation tool when no dashboard is available
-- Real SOC analysts read raw logs dashboard proficiency matters but log reading is fundamental
-- Timestamp correlation between manager and agent events is critical for accurate timelines
-
----
-
-### 5. Kali Endpoint Activity Detected First Alerts
+## First Endpoint Telemetry
 
 ![Kali Alerts Detected](./screenshots/05_kali_alerts_detected.png)
 
-- Confirmed Attacker-Tier4 events appearing in the alerts log
-- Sudo privilege escalation detected Rule 5402 level 3
-- PAM session opened and closed events captured
-- Agent successfully forwarding endpoint telemetry to manager
+Endpoint events arriving at the manager.
 
-#### SOC Observations:
+Rule 5402, level 3, successful sudo to root.
 
-- Sudo usage on an endpoint is a tier 1 SOC alert always warrants investigation
-- PAM session events create an audit trail of every login and privilege escalation
-- Agent-to-manager telemetry confirms end-to-end EDR coverage is working
+PAM session open and close events captured.
 
----
+Sudo is legitimate almost every time it fires, which is exactly why it is worth logging. It is the step between having access and being able to use it, and an attacker who lands as a normal user needs it too.
 
-### 6. Critical Alert Unauthorized User Account Created
+## Detection, Unauthorised Account Creation
 
 ![User Creation Alert](./screenshots/06_user_creation_alert.png)
 
-- Simulated attacker created user account `hacker123` on Kali endpoint
-- Wazuh fired immediately:
-  - **Rule 5901 (level 8)** "New group added to the system"
-  - **Rule 5902 (level 8)** "New user added to the system"
-- Full details captured: UID=1003, GID=1004, home=/home/hacker123
-- Level 8 severity high priority alert requiring immediate investigation
+A user account, hacker123, was created on the endpoint.
 
-#### SOC Observations:
+Wazuh fired immediately:
 
-- Unauthorized user creation is a classic persistence technique attackers create accounts to maintain access
-- Level 8 in Wazuh means high severity this alert should trigger an immediate response
-- Full UID and home directory details allow the IR team to quickly locate and remove the account
-- In a real incident this would trigger host isolation and forensic investigation
+Rule 5901, level 8, new group added to the system.
 
----
+Rule 5902, level 8, new user added to the system.
 
-### 7. SSH Brute Force Detected from Kali Endpoint
+Full detail captured: UID 1003, GID 1004, home /home/hacker123.
+
+This is the alert the lab exists for. Account creation is persistence, and it is persistence that survives the password reset, the reboot, and the incident review. An attacker who gets a shell and leaves has visited. An attacker who gets a shell and creates an account has moved in.
+
+Level 8 is the reason the detail matters. The alert does not just say something happened, it hands the responder the UID and the home directory, which is everything needed to find and remove the account without a forensic pass.
+
+## Detection, SSH Brute Force
 
 ![SSH Brute Force Alerts](./screenshots/07_ssh_brute_force_alerts.png)
 
-- Simulated brute force using repeated SSH attempts with invalid user `wronguser`
-- Wazuh detected and alerted on every attempt:
-  - **Rule 5503 (level 5)** "PAM: User login failed"
-  - **Rule 5710 (level 5)** "sshd: Attempt to login using a non-existent user"
-- Source IP identified as ::1 (localhost) internal attack simulation
-- Multiple attempts captured with timestamps confirming brute force pattern
+Repeated SSH attempts using a non existent user, wronguser.
 
-#### SOC Observations:
+Rule 5503, level 5, PAM user login failed.
 
-- SSH brute force is one of the most common attack techniques Rule 5710 is a critical detection
-- Repeated failed logins in rapid succession confirm automated brute force not human error
-- In a real environment this would trigger an IP block and account lockout investigation
+Rule 5710, level 5, sshd attempt to login using a non existent user.
 
----
+Source ::1, loopback, confirming the lab origin.
+
+Rule 5710 is the more interesting of the two. A failed password against a real account is someone guessing a password. Repeated attempts against an account that does not exist is someone guessing who exists, which is enumeration wearing brute force's clothes. Wazuh separates them, and that distinction changes what the attacker is assumed to know.
 
 ## Alert Summary
 
-| Rule | Level | Alert | Source | Severity |
-|---|---|---|---|---|
-| 5402 | 3 | Successful sudo to ROOT executed | Attacker-Tier4 | Medium |
-| 5501 | 3 | PAM: Login session opened | Attacker-Tier4 | Low |
-| 5502 | 3 | PAM: Login session closed | Attacker-Tier4 | Low |
-| 5901 | 8 | New group added to the system | Attacker-Tier4 | High |
-| 5902 | 8 | New user added to the system "hacker123" | Attacker-Tier4 | High |
-| 5503 | 5 | PAM: User login failed | Attacker-Tier4 | Medium |
-| 5710 | 5 | sshd: Attempt to login using a non-existent user | Attacker-Tier4 | Medium |
+| Rule | Level | Alert | Source |
+| --- | --- | --- | --- |
+| 5402 | 3 | Successful sudo to root | Attacker-Tier4 |
+| 5501 | 3 | PAM login session opened | Attacker-Tier4 |
+| 5502 | 3 | PAM login session closed | Attacker-Tier4 |
+| 5503 | 5 | PAM user login failed | Attacker-Tier4 |
+| 5710 | 5 | sshd attempt to login using a non existent user | Attacker-Tier4 |
+| 5901 | 8 | New group added to the system | Attacker-Tier4 |
+| 5902 | 8 | New user added to the system, hacker123 | Attacker-Tier4 |
 
----
-
-## IOC Table
+## Observations
 
 | Type | Value | Verdict |
-|---|---|---|
-| Endpoint | Attacker-Tier4 | ❌ Suspicious activity detected |
-| User Created | hacker123 (UID 1003) | ❌ Unauthorized account persistence attempt |
-| Failed SSH User | wronguser | ❌ Brute force target username |
-| Privilege Action | sudo to ROOT | ⚠️ Privilege escalation investigate |
-
----
+| --- | --- | --- |
+| Endpoint | Attacker-Tier4 | Suspicious activity detected |
+| Account created | hacker123, UID 1003 | Unauthorised, persistence |
+| Failed SSH user | wronguser | Non existent, enumeration attempt |
+| Privilege action | sudo to root | Escalation, investigate |
+| Source | ::1, loopback | Lab origin, self generated |
 
 ## MITRE ATT&CK Mapping
 
-| Technique ID | Technique | Alert |
-|---|---|---|
-| T1078 | Valid Accounts | Unauthorized user hacker123 created |
-| T1136.001 | Create Account: Local Account | Rule 5902 new user added |
-| T1548.003 | Abuse Elevation: Sudo | Rule 5402 sudo to ROOT |
-| T1110.001 | Brute Force: Password Guessing | Rule 5710 SSH invalid user attempts |
-| T1021.004 | Remote Services: SSH | SSH brute force via port 44752 |
+| Tactic | Technique | ID | Rule |
+| --- | --- | --- | --- |
+| Persistence | Create account, local account | T1136.001 | 5902 |
+| Privilege Escalation | Abuse elevation control mechanism, sudo | T1548.003 | 5402 |
+| Credential Access | Brute force, password guessing | T1110.001 | 5710, 5503 |
 
----
+Mapping note: these are the techniques the rules detected in this lab. T1078 valid accounts is not mapped, because the created account was never used to authenticate.
 
-## SOC Analyst Findings
+## Analyst Findings
 
-- Wazuh EDR successfully deployed across Ubuntu Server and Kali Linux endpoint
-- All suspicious activity generated on Kali was detected and alerted in real time
-- Unauthorized user account `hacker123` created persistence technique detected Rule 5902 level 8
-- SSH brute force attempts detected 10 failed attempts for invalid user `wronguser`
-- Privilege escalation via sudo detected Rule 5402
-- All alerts captured with timestamps, source host, and rule details
+Wazuh deployed across manager and endpoint, telemetry confirmed flowing end to end.
 
----
+All three generated behaviours detected in real time.
 
-## SOC Analyst Response
+Unauthorised account hacker123 detected on creation, rule 5902, level 8, with UID and home directory captured.
 
-- Unauthorized user `hacker123` deleted from Kali endpoint immediately
-- SSH brute force source identified and documented
-- All alert rules mapped to MITRE ATT&CK for threat intelligence value
-- Full alert timeline documented for IR handoff
-- Recommended enabling Wazuh active response to auto block brute force IPs
-- Recommended deploying agents to all endpoints in the lab environment
+SSH brute force against a non existent user detected, rule 5710, with the attempt pattern confirming automation.
 
----
+Privilege escalation via sudo detected, rule 5402.
 
-## Analyst Insight
+Every alert carries timestamp, source host, and rule ID, which is what makes them usable rather than just visible.
 
-EDR tools like Wazuh transform an endpoint from a blind spot into a detection surface. Every sudo command, every new user, every failed login all of it becomes a data point that a SOC analyst can pivot on. The most valuable moment in this lab was watching Rule 5902 fire in real time the instant `hacker123` was created. That is exactly what Tier 1 analysts see when an attacker establishes persistence on a compromised endpoint. Speed of detection is everything and EDR is what makes that speed possible.
+## Recommended Response
 
----
+Remove the unauthorised account and check for anything it owns.
 
-## Learning Outcome
+Enable Wazuh active response to block brute force sources automatically rather than waiting for an analyst to read the log.
 
-- Deploy Wazuh manager and agent across a multi machine lab environment
-- Connect and verify Wazuh agent telemetry from a monitored endpoint
-- Generate real suspicious activity and observe Wazuh detection in real time
-- Read and interpret raw Wazuh alert logs without a dashboard
-- Identify persistence techniques unauthorized user creation via EDR alerts
-- Detect SSH brute force patterns through Wazuh rule 5710
-- Map all detected activity to MITRE ATT&CK framework
-- Produce a professional EDR incident report from raw log evidence
+Alert specifically on rule 5902. Account creation has no innocent explanation outside a change window.
 
----
+Deploy agents to every endpoint. Partial coverage is a map with holes in it that looks complete.
+
+Audit the agent list on a schedule so disconnected agents surface before an incident does.
+
+## What This Lab Demonstrates
+
+Deploying an EDR manager and agent across a multi machine environment and verifying telemetry end to end.
+
+Reading raw alert logs rather than depending on a dashboard.
+
+Establishing a baseline before generating any attack activity.
+
+Recognising account creation as persistence rather than as an administrative event.
+
+Distinguishing password guessing from user enumeration by which rule fires.
+
+Mapping detections to ATT&CK by rule ID, and leaving out the technique that was not observed.
 
 ## Repository Structure
 
@@ -249,6 +186,5 @@ edr-wazuh-endpoint-detection-lab/
 
 ---
 
-## Conclusion
-
-This lab demonstrates a complete EDR deployment and endpoint detection workflow using Wazuh. A manager was configured on Ubuntu Server and an agent deployed on Kali Linux. Real suspicious activity was generated privilege escalation, unauthorized user creation, and SSH brute force and all events were detected and alerted in real time through the Wazuh alerts log. MITRE ATT&CK techniques were mapped and a full incident report was produced. This mirrors the exact process a SOC Tier 1 analyst follows when investigating endpoint alerts from an EDR platform.
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-WilliamInCyber-blue?style=flat&logo=linkedin)](https://linkedin.com/in/WilliamInCyber)
+[![X](https://img.shields.io/badge/X-@WilliamInCyber-black?style=flat&logo=x)](https://x.com/WilliamInCyber)
